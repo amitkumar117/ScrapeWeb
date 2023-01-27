@@ -7,14 +7,21 @@ class Socket
 	WSADATA wsa;
 	bool sockInitialized;
 	SOCKET sockfd;
+	int port;
 	sockaddr_in sock;
-	//void setConnectionInfo(in_addr ip, int port);
+	int opt;
+	int addrlen;
+	sockaddr_in addr;
 protected:
+	void setConnectionInfo();
+	void setSockOptions();
 	int createSocketDescriptor();
-	void closeSocketDescriptor();
+	void closeSocketDescriptor(SOCKET socket = 0);
 	int connectSocket(addrinfo* addr);
+	int setListener(SOCKET*);
+	void setPort(int);
 public:
-	int sendRequest(string request);
+	int sendData(string request, SOCKET socket=0);
 	Socket();
 	~Socket();
 };

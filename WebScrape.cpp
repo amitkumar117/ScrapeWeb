@@ -2,54 +2,131 @@
 #include"CurlConnection.h"
 using namespace std;
 
+void parseFeed(string response, stories* story)
+{
+	size_t end = 0;
+	size_t pos = 0;
+	bool isFirst = true;
+	while (true)
+	{
+		pos = response.find("most-popular-feed__item-section", pos);
+		if (pos != string::npos)
+		{
+			if (isFirst)
+			{
+				isFirst = false;
+			}
+			else
+			{
+				story->next = new stories;
+				story = story->next;
+			}
+			pos = response.find("<a href=", pos);
+			if (pos != string::npos)
+			{
+				pos = pos + 9;
+				end = response.find("\"", pos);
+				if (end != string::npos)
+				{
+					story->url = response.substr(pos, end - pos);
+					pos = end;
+					pos = response.find("most-popular-feed__item-headline", pos);
+					if (pos != string::npos)
+					{
+						pos = response.find("\">", pos);
+						if (pos != string::npos)
+						{
+							pos = pos + 2;
+							end = response.find("</", pos);
+							if (end != string::npos)
+							{
+								story->headline = response.substr(pos, end - pos);
+								pos = end;
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+string formJSONResponse(stories *story)
+{
+	string response;
+	bool isFirst = true;
+	response.append("[");
+	while (story != NULL)
+	{
+		if (isFirst)
+		{
+			response.append("\r\n");
+			isFirst = false;
+		}
+		else
+		{
+			response.append(",\r\n");
+		}
+		response.append("\t{\r\n");
+		response.append("\t\t\"title\":\"");
+		response.append(story->headline);
+		response.append("\",\r\n");
+		response.append("\t\t\"link\":\"");
+		response.append(story->url);
+		response.append("\"\r\n");
+		response.append("\t}");
+		story = story->next;
+	}
+	response.append("\r\n]");
+	return response;
+}
+
 int main()
 {
-	string request2 = "GET /websiteos/example_of_a_simple_html_page.htm HTTP/1.1\r\n\
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n\
-Accept-Encoding: gzip, deflate\r\n\
-Accept-Language: en-US,en;q=0.9\r\n\
-Cache-Control: max-age=0\r\n\
-Connection: keep-alive\r\n\
-Referer: https://www.yahoo.com/\r\n\
-Upgrade-Insecure-Requests: 1\r\n\
-User-Agent: PostmanRuntime/7.30.0\r\n\
-Postman-Token: 76e74e77-4fab-4876-9fb3-0308f2486246c\r\n\
-Host: help.websiteos.com\r\n\r\n";
-
-	string request = "GET / HTTP/1.1\r\n\
-Host: time.com\r\n\
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n\
-Accept-Encoding: gzip, deflate\r\n\
-Accept-Language: en-US,en;q=0.9\r\n\r\n";
-
-	/*Host url("time.com", 441);
-	if (url.connect() == QeSuccess)
+	Host host("localhost", 5431);
+	while (true)
 	{
-		cout << "Connection successful \n";
-		if (url.sendRequest(request) != request.length())
+		string httpResponse = "HTTP/1.1 200 OK\r\n\
+Content-Type: application/json; charset=utf-8\r\n\
+Connection: keep-alive\r\n";
+		string request;
+		host.readData(&request);
+		if (request.starts_with("GET /getTimeStories"))
 		{
-			cout << "Error Sending Request \n";
+			string url = "https://time.com";
+			CurlConnection curlConnection;
+			curlConnection.setUrl(url);
+			if (curlConnection.curlConnect() == QeSuccess)
+			{
+				string response = curlConnection.getResponse();
+				stories* story = new stories;
+				parseFeed(response, story);
+				string result = formJSONResponse(story);
+				httpResponse.append("Content-Length: ");
+				char buff[16] = { 0 };
+				sprintf_s(buff, "%d", result.length());
+				httpResponse.append(buff);
+				httpResponse.append("\r\n\r\n");
+				httpResponse.append(result.c_str());
+				httpResponse.append("\r\n");
+			}
+			else
+			{
+				httpResponse.append("Content-Length: 29\r\n\r\n");
+				httpResponse.append("Can't connect to URL provided\r\n");
+			}
 		}
-	}
-	else
-	{
-		cout << "Connection failure \n";
-	}*/
-
-	string url = "https://time.com";
-	CurlConnection curlConnection;
-	curlConnection.setUrl(url);
-	if (curlConnection.curlConnect() == QeSuccess)
-	{
-		FILE* fptr;
-		fopen_s(&fptr,"C:\\Users\\jaina\\OneDrive\\Documents\\VS_Apps\\ScrapeWeb\\x64\\Debug\\log.txt","w");
-		string response = curlConnection.getResponse();
-		if (fptr)
+		else
 		{
-			fprintf(fptr, "%s", response.c_str());
-			fclose(fptr);
+			httpResponse.append("Content-Length: 11\r\n\r\n");
+			httpResponse.append("Bad Request\r\n");
 		}
+		host.sendData(httpResponse, host.getReadSocket());
 	}
-	cout << "Done \n";
+	cout << "Done";
 	return 0;
 }

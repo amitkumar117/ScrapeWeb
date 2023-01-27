@@ -36,6 +36,10 @@ Host::~Host()
     {
         freeaddrinfo(addrs);
     }
+    if (readSock)
+    {
+        closeSocketDescriptor(readSock);
+    }
 }
 
 int Host::connect()
@@ -60,4 +64,31 @@ int Host::connect()
         closeSocketDescriptor();
     }
     return QeFailure;
+}
+
+int Host::readData(string *request)
+{
+    char buffer[1024];
+    int valread;
+    closeSocketDescriptor();
+    closeSocketDescriptor(readSock);
+    if (createSocketDescriptor() != QeSuccess)
+    {
+        cout << "Error in socket descriptor creation" << endl;
+        return QeFailure;
+    }
+    setPort(this->port);
+    setConnectionInfo();
+    setSockOptions();
+    if (setListener(&readSock) != QeSuccess)
+    {
+        return QeFailure;
+    }
+    valread = recv(readSock, buffer, REQUEST_SIZE, 0);
+    request->append(buffer);
+}
+
+SOCKET Host::getReadSocket()
+{
+    return readSock;
 }
