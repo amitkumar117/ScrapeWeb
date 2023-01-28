@@ -1,5 +1,5 @@
 # ScrapeWeb
-Application to read most viewed storied from a Time.com and provide results running as a service.
+Application to read most viewed stories from webpage "time.com" and provide results running as a service.
 
 To run directly :
 1. Download ScrapeWeb.exe, vcruntime140_1d.dll, libcurl-x64.dll and place in a folder or add the dlls to path for the exe to find them.
