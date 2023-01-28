@@ -87,7 +87,7 @@ string formJSONResponse(stories *story)
 
 int main()
 {
-	Host host("localhost", 5431);
+	Host host("localhost", 80);
 	while (true)
 	{
 		string httpResponse = "HTTP/1.1 200 OK\r\n\
